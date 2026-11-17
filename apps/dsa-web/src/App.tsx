@@ -18,6 +18,7 @@ import { useAgentChatStore } from './stores/agentChatStore';
 import { resolveLoginRedirect } from './utils/loginRedirect';
 import './App.css';
 
+const MoexPage = lazy(() => import('./pages/MoexPage'));
 const HomePage = lazy(() => import('./pages/HomePage'));
 const BacktestPage = lazy(() => import('./pages/BacktestPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
@@ -80,6 +81,8 @@ const AppContent: React.FC = () => {
     return <Navigate to={redirect} replace />;
   }
 
+  if (location.pathname === '/moex') return <RouteOutletBoundary />;
+
   return (
     <Shell>
       <RouteOutletBoundary />
@@ -88,6 +91,7 @@ const AppContent: React.FC = () => {
 };
 
 const routeChildren = [
+  { path: '/moex', element: <MoexPage /> },
   { path: '/', element: <HomePage /> },
   { path: '/chat', element: <ChatPage /> },
   { path: '/portfolio', element: <PortfolioPage /> },

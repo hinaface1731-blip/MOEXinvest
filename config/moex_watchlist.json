@@ -1,0 +1,12 @@
+{
+  "equities": ["SBER", "YDEX", "X5"],
+  "bonds": ["SU26248RMFS3", "SU26243RMFS4", "SU26247RMFS5"],
+  "indices": ["IMOEX"],
+  "verified_bonds": {
+    "SU26248RMFS3": "RU000A108EH4",
+    "SU26243RMFS4": "RU000A106E90",
+    "SU26247RMFS5": "RU000A108EF8"
+  },
+  "verified_at": "2026-11-17",
+  "source": "https://iss.moex.com/iss/securities.json"
+}

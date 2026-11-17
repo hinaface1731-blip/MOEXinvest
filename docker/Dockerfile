@@ -12,7 +12,7 @@ ARG DSA_WEB_VERSION=0.0.0
 ARG DSA_WEB_REVISION=unknown
 
 COPY apps/dsa-web/package.json apps/dsa-web/package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci --registry=https://registry.npmjs.org --replace-registry-host=always
 
 COPY apps/dsa-web/ ./
 RUN DSA_WEB_VERSION="${DSA_WEB_VERSION}" DSA_WEB_REVISION="${DSA_WEB_REVISION}" npm run build
@@ -57,6 +57,8 @@ COPY data_provider/ ./data_provider/
 COPY bot/ ./bot/
 COPY src/ ./src/
 COPY strategies/ ./strategies/
+COPY config/ ./config/
+COPY scripts/moex_report.py ./scripts/moex_report.py
 COPY --from=web-builder /app/static ./static/
 COPY docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 

@@ -20,6 +20,7 @@ type SidebarNavProps = {
 type NavItem = {
   key: string;
   labelKey: UiTextKey;
+  label?: string;
   to: string;
   icon: React.ComponentType<{ className?: string }>;
   exact?: boolean;
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'alerts', labelKey: 'layout.nav.alerts', to: '/alerts', icon: Bell },
   { key: 'data', labelKey: 'layout.nav.dataCenter', to: '/data', icon: Database },
   { key: 'usage', labelKey: 'layout.nav.usage', to: '/usage', icon: Gauge },
+  { key: 'moex', labelKey: 'layout.nav.home', label: 'MOEX · Россия', to: '/moex', icon: BarChart3 },
   { key: 'settings', labelKey: 'layout.nav.settings', to: '/settings', icon: Settings2 },
 ];
 
@@ -85,8 +87,8 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ collapsed = false, onNav
       </div>
 
       <nav className={cn('flex flex-col gap-1.5', isRail ? 'min-h-0 overflow-y-auto' : 'flex-1')} aria-label={t('layout.mainNav')}>
-        {NAV_ITEMS.map(({ key, labelKey, to, icon: Icon, exact, badge }) => {
-          const label = t(labelKey);
+        {NAV_ITEMS.map(({ key, labelKey, label: customLabel, to, icon: Icon, exact, badge }) => {
+          const label = customLabel ?? t(labelKey);
           return (
           <NavLink
             key={key}

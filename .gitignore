@@ -89,3 +89,5 @@ static/
 /apps/dsa-desktop/node_modules/
 /node_modules/
 docs/specs/
+# Public dashboard output is generated from official APIs, never committed.
+pages-dist/

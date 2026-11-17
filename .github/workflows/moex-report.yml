@@ -1,0 +1,74 @@
+name: MOEX daily report
+on:
+  workflow_dispatch:
+    inputs:
+      period:
+        type: choice
+        options: [morning, evening]
+        default: evening
+      send:
+        description: Send to configured Telegram chat
+        type: boolean
+        default: false
+  schedule:
+    - cron: '20 6 * * *'
+    - cron: '20 16 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: moex-report
+  cancel-in-progress: false
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Restore public report history and delivery markers
+        run: |
+          if git ls-remote --exit-code origin refs/heads/moex-report-history >/dev/null; then
+            git fetch --depth=1 origin moex-report-history
+            git archive FETCH_HEAD reports/moex | tar -x
+          fi
+      - name: Generate public market report
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MOEX_SEND: ${{ inputs.send || (github.event_name == 'schedule' && vars.MOEX_SCHEDULE_SEND == 'true') }}
+          MOEX_PERIOD: ${{ inputs.period || (github.event.schedule == '20 6 * * *' && 'morning' || 'evening') }}
+          TZ: Europe/Moscow
+        run: |
+          args=(--period "$MOEX_PERIOD")
+          if [ "$MOEX_SEND" = 'true' ]; then args+=(--send); fi
+          python scripts/moex_report.py "${args[@]}"
+      - name: Persist public report history
+        if: always()
+        run: |
+          if [ ! -d reports/moex ]; then exit 0; fi
+          cp -a reports/moex /tmp/moex-public-reports
+          if git show-ref --verify --quiet refs/remotes/origin/moex-report-history; then
+            git switch --detach refs/remotes/origin/moex-report-history
+          elif git ls-remote --exit-code origin refs/heads/moex-report-history >/dev/null; then
+            git fetch --depth=1 origin moex-report-history
+            git switch --detach FETCH_HEAD
+          else
+            git switch --orphan moex-report-history
+          fi
+          mkdir -p reports/moex
+          cp -a /tmp/moex-public-reports/. reports/moex/
+          git add -f reports/moex
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m 'Store public MOEX reports'
+          git push origin HEAD:refs/heads/moex-report-history
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moex-public-report-${{ github.run_id }}
+          path: reports/moex/*.json
+          retention-days: 90
+          if-no-files-found: warn

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- [修复] Honor container ADMIN_AUTH_ENABLED when no editable .env setting exists, protecting the private MOEX API in Docker.
+
+- [新功能] Added the Russian MOEX dashboard, official ISS provider, bond cash-flow analytics, RUB portfolio events, CBR macro data, private Telegram commands, and a public GitHub Pages snapshot.
+- [测试] Added deterministic MOEX contract, financial calculation, portfolio and authorization tests with captured public ISS fixtures.
+- [文档] Added Russian setup and portfolio guides with explicit data and deployment limitations.
+
 <!-- 新条目格式：- [类型] 描述（类型取值：新功能/改进/修复/文档/测试/chore）-->
 
 ## [3.35.0] - 2026-11-16

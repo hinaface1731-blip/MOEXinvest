@@ -51,3 +51,5 @@ apps/dsa-web/node_modules/
 apps/dsa-web/dist/
 apps/dsa-web/build/
 apps/dsa-web/coverage/
+
+pages-dist/

@@ -121,3 +121,6 @@ router.include_router(
     health.router,
     tags=["Health"]
 )
+
+from api.v1.endpoints import moex
+router.include_router(moex.router, prefix="/moex", tags=["MOEX"])

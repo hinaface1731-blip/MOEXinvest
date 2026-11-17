@@ -30,12 +30,12 @@ except Exception:  # pragma: no cover - optional dependency path
     yf = None
 
 EPS = 1e-8
-VALID_MARKETS = {"cn", "hk", "us", "jp", "kr", "tw"}
+VALID_MARKETS = {"cn", "hk", "us", "jp", "kr", "tw", "ru"}
 PARTIAL_VALUATION_MARKETS = {"jp", "kr", "tw"}
 VALID_COST_METHODS = {"fifo", "avg"}
 VALID_SIDES = {"buy", "sell"}
 VALID_CASH_DIRECTIONS = {"in", "out"}
-VALID_CORPORATE_ACTIONS = {"cash_dividend", "split_adjustment"}
+VALID_CORPORATE_ACTIONS = {"cash_dividend", "coupon", "split_adjustment"}
 PORTFOLIO_FX_REFRESH_DISABLED_REASON = "portfolio_fx_update_disabled"
 PORTFOLIO_REALTIME_QUOTE_MAX_WORKERS = 4
 
@@ -297,9 +297,9 @@ class PortfolioService:
     ) -> Dict[str, Any]:
         action_type_norm = (action_type or "").strip().lower()
         if action_type_norm not in VALID_CORPORATE_ACTIONS:
-            raise ValueError("action_type must be cash_dividend or split_adjustment")
+            raise ValueError("action_type must be cash_dividend, coupon or split_adjustment")
 
-        if action_type_norm == "cash_dividend":
+        if action_type_norm in ("cash_dividend", "coupon"):
             if cash_dividend_per_share is None or cash_dividend_per_share < 0:
                 raise ValueError("cash_dividend_per_share must be >= 0 for cash_dividend")
         if action_type_norm == "split_adjustment":
@@ -447,7 +447,7 @@ class PortfolioService:
         if action_type is not None and action_type.strip():
             action_norm = action_type.strip().lower()
             if action_norm not in VALID_CORPORATE_ACTIONS:
-                raise ValueError("action_type must be cash_dividend or split_adjustment")
+                raise ValueError("action_type must be cash_dividend, coupon or split_adjustment")
 
         rows, total = self.repo.query_corporate_actions(
             account_id=account_id,
@@ -488,7 +488,7 @@ class PortfolioService:
             account_rows = self.repo.list_accounts(include_inactive=False)
 
         accounts_payload: List[Dict[str, Any]] = []
-        aggregate_currency = "CNY"
+        aggregate_currency = "RUB" if account_rows and all(a.market == "ru" for a in account_rows) else "CNY"
         aggregate = {
             "total_cash": 0.0,
             "total_market_value": 0.0,
@@ -910,7 +910,7 @@ class PortfolioService:
                     self._normalize_currency(event.currency),
                 )
                 action_type = (event.action_type or "").strip().lower()
-                if action_type == "cash_dividend":
+                if action_type in ("cash_dividend", "coupon"):
                     per_share = float(event.cash_dividend_per_share or 0.0)
                     if per_share <= 0:
                         continue
@@ -1230,6 +1230,26 @@ class PortfolioService:
 
     @staticmethod
     def _fetch_realtime_position_price(symbol: str) -> Tuple[Optional[float], Optional[str]]:
+        from data_provider.moex_provider import is_moex, get_moex_provider, number
+        from data_provider.base import DataFetchError
+        if is_moex(symbol):
+            try:
+                quote = get_moex_provider().snapshot(symbol)
+                if quote["status"] != "ok":
+                    return None, None
+                price = quote["price"]
+                if quote["market"] == "bonds":
+                    security = quote["security"]
+                    face = number(security.get("FACEVALUEONSETTLEDATE") or security.get("FACEVALUE"))
+                    accrued = number(security.get("ACCRUEDINT"))
+                    if price is None or face is None or accrued is None:
+                        return None, None
+                    price = price * face / 100 + accrued
+                return price, "moex"
+            except (ValueError, RuntimeError, DataFetchError) as exc:
+                logger.warning("MOEX portfolio quote unavailable: %s", exc)
+                return None, None
+
         try:
             from data_provider.base import DataFetcherManager
 
@@ -1727,7 +1747,7 @@ class PortfolioService:
     def _normalize_market(value: str) -> str:
         market = (value or "").strip().lower()
         if market not in VALID_MARKETS:
-            raise ValueError("market must be one of: cn, hk, us, jp, kr, tw")
+            raise ValueError("market must be one of: cn, hk, us, jp, kr, tw, ru")
         return market
 
     @staticmethod
@@ -1746,6 +1766,8 @@ class PortfolioService:
 
     @staticmethod
     def _default_currency_for_market(market: str) -> str:
+        if market == "ru":
+            return "RUB"
         if market == "hk":
             return "HKD"
         if market == "us":

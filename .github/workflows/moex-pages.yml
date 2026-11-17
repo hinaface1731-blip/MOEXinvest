@@ -1,0 +1,61 @@
+name: MOEX public dashboard
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/dsa-web/**'
+      - 'data_provider/moex_provider.py'
+      - 'src/services/moex*.py'
+      - 'src/services/russian_macro.py'
+      - 'scripts/export_moex_demo.py'
+      - 'config/moex_watchlist.json'
+      - '.github/workflows/moex-pages.yml'
+  schedule:
+    - cron: '15 6,16 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: moex-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/dsa-web/package-lock.json
+      - run: pip install -r requirements.txt pytest pytest-timeout
+      - run: python -m pytest tests/test_moex.py -m 'not network' --timeout=60
+      - run: npm ci --registry=https://registry.npmjs.org --replace-registry-host=always
+        working-directory: apps/dsa-web
+      - run: npm run build -- --outDir ../../pages-dist --base=/${{ github.event.repository.name }}/
+        working-directory: apps/dsa-web
+        env:
+          VITE_MOEX_DEMO: 'true'
+      # No secrets or portfolio state are made available to this job.
+      - run: python scripts/export_moex_demo.py --output pages-dist/moex-demo.json
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

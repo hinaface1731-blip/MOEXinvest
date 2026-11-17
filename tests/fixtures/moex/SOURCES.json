@@ -1,0 +1,22 @@
+{
+  "retrieved_at": "2026-11-17",
+  "base": "https://iss.moex.com/iss/",
+  "note": "Public ISS responses captured during integration; no user account data.",
+  "files": {
+    "sber.json": "securities/SBER.json",
+    "ydex.json": "securities/YDEX.json",
+    "x5.json": "securities/X5.json",
+    "imoex.json": "securities/IMOEX.json",
+    "bond.json": "securities/SU26248RMFS3.json",
+    "bondquote.json": "engines/stock/markets/bonds/boards/TQOB/securities/SU26248RMFS3.json",
+    "coupons.json": "securities/SU26248RMFS3/bondization.json",
+    "coupons_page2.json": "securities/SU26248RMFS3/bondization.json?coupons.start=20",
+    "history.json": "engines/stock/markets/shares/boards/TQBR/securities/SBER/candles.json?interval=24&from=2026-11-01&till=2026-11-16",
+    "cbr-inflation.html": "https://www.cbr.ru/hd_base/infl/",
+    "cbr-calendar.html": "https://www.cbr.ru/DKP/cal_mp/",
+    "ofz248.json": "securities.json?q=26248",
+    "ofz243.json": "securities.json?q=26243",
+    "ofz247.json": "securities.json?q=26247",
+    "indexquote.json": "engines/stock/markets/index/boards/SNDX/securities/IMOEX.json"
+  }
+}

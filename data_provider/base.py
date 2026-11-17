@@ -1970,6 +1970,13 @@ class DataFetcherManager:
         Raises:
             DataFetchError: 非指数代码的所有数据源都失败时抛出
         """
+        from .moex_provider import is_moex, get_moex_provider
+        if is_moex(stock_code):
+            provider = get_moex_provider()
+            if provider.instrument(stock_code)["market"] == "bonds":
+                raise ValueError("Bond analysis requires the MOEX bond endpoint")
+            return provider.get_daily_data(stock_code, start_date, end_date, days), provider.name
+
         from .us_index_mapping import is_us_index_code, is_us_stock_code
 
         raw_stock_code = (stock_code or "").strip()
@@ -2488,6 +2495,10 @@ class DataFetcherManager:
         if not config.enable_realtime_quote:
             logger.debug(f"[实时行情] 功能已禁用，跳过 {stock_code}")
             return None
+
+        from .moex_provider import is_moex, get_moex_provider
+        if is_moex(stock_code):
+            return get_moex_provider().get_realtime_quote(stock_code)
 
         # ----------------------------------------------------------
         # 已登记 A 股指数 — 固定实时行情链（Story 1.5）
@@ -3103,6 +3114,10 @@ class DataFetcherManager:
         Returns:
             股票中文名称，所有数据源都失败则返回 None
         """
+        from .moex_provider import is_moex, get_moex_provider
+        if is_moex(stock_code):
+            return get_moex_provider().instrument(stock_code)["name"]
+
         raw_stock_code = (stock_code or "").strip()
         target = analysis_target if analysis_target is not None else parse_analysis_target(raw_stock_code)
         self._warn_bare_index_conflict(target)
